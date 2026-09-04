@@ -57,7 +57,7 @@
       overscroll-behavior-y: none;
     }
 
-    /* 宣紙水墨暈染畫布 (極致微透) */
+    /* 全螢幕宣紙水墨暈染畫布 (極致微透) */
     #ink-canvas {
       position: fixed;
       top: 0; left: 0;
@@ -67,7 +67,7 @@
       opacity: 0.16;
     }
 
-    /* 顯著的單顆下落水滴與拖尾 */
+    /* 落下之單顆水滴 */
     .drop-particle {
       position: fixed;
       top: -30px;
@@ -87,7 +87,7 @@
       100% { transform: translateY(var(--fall-dist)) scaleY(1); opacity: 0; }
     }
 
-    /* 著陸水花漣漪光環 */
+    /* 著陸水花微漣漪 */
     .impact-ripple {
       position: fixed;
       width: 12px;
@@ -323,12 +323,13 @@
       grid-template-columns: 1fr 1fr;
       gap: 12px;
       margin-bottom: 22px;
+      margin-top: 6px;
     }
     .quadrant-box {
       border-radius: var(--radius-xl);
-      padding: 16px 13px;
+      padding: 16px 13px 14px;
       border: 1.5px solid;
-      min-height: 245px;
+      min-height: 255px;
       display: flex;
       flex-direction: column;
       box-shadow: var(--shadow-card);
@@ -360,6 +361,27 @@
     .q2 .q-header { color: var(--q2-text); }
     .q4 .q-header { color: var(--q4-text); }
 
+    /* 各象限專屬新增按鈕 */
+    .btn-q-header-add {
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.92rem;
+      line-height: 1;
+      color: inherit;
+      transition: all 0.2s ease;
+    }
+    .btn-q-header-add:hover {
+      background: #FFFFFF;
+      transform: scale(1.1);
+    }
+
     .q-task-list { display: flex; flex-direction: column; gap: 9px; flex: 1; min-height: 50px; }
     .q-task-card {
       background: rgba(255, 255, 255, 0.96);
@@ -386,6 +408,28 @@
     .q-task-card.drag-insert-before { border-top: 2.5px solid var(--primary); }
     .q-task-title-wrap { flex: 1; }
 
+    /* 各象限底層新增入口按鈕 */
+    .btn-q-add-slot {
+      margin-top: 10px;
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px dashed rgba(0, 0, 0, 0.12);
+      border-radius: var(--radius-md);
+      padding: 8px 10px;
+      text-align: center;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: inherit;
+      cursor: pointer;
+      opacity: 0.85;
+      transition: all 0.2s ease;
+    }
+    .btn-q-add-slot:hover {
+      background: rgba(255, 255, 255, 0.9);
+      opacity: 1;
+      border-style: solid;
+    }
+
+    /* 習慣新增框 */
     .add-box {
       background: var(--surface-glass);
       backdrop-filter: blur(18px);
@@ -407,17 +451,7 @@
       font-weight: 500;
     }
     .add-box input::placeholder { color: var(--text-light); }
-    .add-box-meta { display: flex; gap: 10px; justify-content: space-between; align-items: center; }
-    .add-box-meta select {
-      border: 1px solid var(--border-subtle);
-      border-radius: 11px;
-      padding: 7px 12px;
-      font-size: 0.82rem;
-      background: rgba(255, 255, 255, 0.9);
-      color: var(--text-main);
-      outline: none;
-      font-weight: 500;
-    }
+    .add-box-meta { display: flex; gap: 10px; justify-content: flex-end; align-items: center; }
     .btn-add {
       background: var(--primary);
       color: #FFF;
@@ -673,37 +707,47 @@
       <div class="full-row-list" id="home-habits-list"></div>
     </section>
 
-    <!-- ==================== 2. 待辦象限 VIEW ==================== -->
+    <!-- ==================== 2. 待辦象限 VIEW (無頂部輸入框，各象限直接新增) ==================== -->
     <section id="view-tasks" class="view-container">
-      <div class="add-box">
-        <input type="text" id="new-task-title" placeholder="寫下一件專注事項..." />
-        <div class="add-box-meta">
-          <select id="new-task-quadrant">
-            <option value="q1">重要且緊急</option>
-            <option value="q3">不重要但緊急</option>
-            <option value="q2">重要不緊急</option>
-            <option value="q4">不重要不緊急</option>
-          </select>
-          <button class="btn-add" onclick="createTask()">加入待辦</button>
-        </div>
-      </div>
-
       <div class="matrix-grid">
+        <!-- 象限 1 -->
         <div class="quadrant-box q1" data-quadrant="q1">
-          <div class="q-header">重要且緊急</div>
+          <div class="q-header">
+            <span>重要且緊急</span>
+            <button class="btn-q-header-add" title="新增至重要且緊急" onclick="openAddModalForQuadrant('q1')">+</button>
+          </div>
           <div class="q-task-list" id="quadrant-q1"></div>
+          <div class="btn-q-add-slot" onclick="openAddModalForQuadrant('q1')">+ 新增事項</div>
         </div>
+
+        <!-- 象限 3 -->
         <div class="quadrant-box q3" data-quadrant="q3">
-          <div class="q-header">不重要但緊急</div>
+          <div class="q-header">
+            <span>不重要但緊急</span>
+            <button class="btn-q-header-add" title="新增至不重要但緊急" onclick="openAddModalForQuadrant('q3')">+</button>
+          </div>
           <div class="q-task-list" id="quadrant-q3"></div>
+          <div class="btn-q-add-slot" onclick="openAddModalForQuadrant('q3')">+ 新增事項</div>
         </div>
+
+        <!-- 象限 2 -->
         <div class="quadrant-box q2" data-quadrant="q2">
-          <div class="q-header">重要不緊急</div>
+          <div class="q-header">
+            <span>重要不緊急</span>
+            <button class="btn-q-header-add" title="新增至重要不緊急" onclick="openAddModalForQuadrant('q2')">+</button>
+          </div>
           <div class="q-task-list" id="quadrant-q2"></div>
+          <div class="btn-q-add-slot" onclick="openAddModalForQuadrant('q2')">+ 新增事項</div>
         </div>
+
+        <!-- 象限 4 -->
         <div class="quadrant-box q4" data-quadrant="q4">
-          <div class="q-header">不重要不緊急</div>
+          <div class="q-header">
+            <span>不重要不緊急</span>
+            <button class="btn-q-header-add" title="新增至不重要不緊急" onclick="openAddModalForQuadrant('q4')">+</button>
+          </div>
           <div class="q-task-list" id="quadrant-q4"></div>
+          <div class="btn-q-add-slot" onclick="openAddModalForQuadrant('q4')">+ 新增事項</div>
         </div>
       </div>
 
@@ -721,7 +765,7 @@
     <section id="view-habits" class="view-container">
       <div class="add-box">
         <input type="text" id="new-habit-name" placeholder="建立一個每日習慣..." />
-        <div class="add-box-meta" style="justify-content: flex-end;">
+        <div class="add-box-meta">
           <button class="btn-add" onclick="createHabit()">加入習慣</button>
         </div>
       </div>
@@ -733,9 +777,9 @@
   <!-- 內嵌毛玻璃 Bottom Sheet 彈窗 -->
   <div class="modal-overlay" id="inflow-modal" onclick="closeModalOnOverlay(event)">
     <div class="modal-sheet">
-      <div class="modal-title" id="modal-title">編輯項目</div>
+      <div class="modal-title" id="modal-title">新增待辦</div>
       <div class="modal-desc" id="modal-desc" style="display:none;"></div>
-      <input type="text" class="modal-input" id="modal-input" />
+      <input type="text" class="modal-input" id="modal-input" placeholder="寫下一件專注事項..." />
       <div class="modal-actions">
         <button class="btn-modal btn-modal-cancel" onclick="closeModal()">取消</button>
         <button class="btn-modal btn-modal-confirm" id="modal-confirm-btn">確認</button>
@@ -782,6 +826,7 @@
 
     const WEEK_DAYS = ['一', '二', '三', '四', '五', '六', '日'];
 
+    // 真實日曆日期（頂部展示，00:00 自動換日）
     function getActualToday() {
       const now = new Date();
       const y = now.getFullYear();
@@ -792,21 +837,25 @@
       return { dateStr: `${y}-${m}-${d}`, dayIdx };
     }
 
+    // 04:00 生理作息週期識別
     function get4AMEpochCycle() {
       const offsetDate = new Date(Date.now() - 4 * 60 * 60 * 1000);
       const y = offsetDate.getFullYear();
       const m = String(offsetDate.getMonth() + 1).padStart(2, '0');
       const d = String(offsetDate.getDate()).padStart(2, '0');
-      return `${y}-${m}-${d}`;
+      const dayOfWeek = offsetDate.getDay();
+      const habitDayIdx = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      return { cycleStr: `${y}-${m}-${d}`, habitDayIdx };
     }
 
-    let { dateStr: todayStr, dayIdx: currentDayIdx } = getActualToday();
+    let { dateStr: todayStr } = getActualToday();
+    let { cycleStr: current4AMCycle, habitDayIdx: currentHabitDayIdx } = get4AMEpochCycle();
 
     // 狀態持久化
-    let tasks = JSON.parse(localStorage.getItem('inflow_v12_tasks')) || [];
-    let habits = JSON.parse(localStorage.getItem('inflow_v12_habits')) || [];
-    let archivedTasks = JSON.parse(localStorage.getItem('inflow_v12_archived')) || [];
-    let weeklyDropCount = parseInt(localStorage.getItem('inflow_v12_weekly_drops')) || 0;
+    let tasks = JSON.parse(localStorage.getItem('inflow_v13_tasks')) || [];
+    let habits = JSON.parse(localStorage.getItem('inflow_v13_habits')) || [];
+    let archivedTasks = JSON.parse(localStorage.getItem('inflow_v13_archived')) || [];
+    let weeklyDropCount = parseInt(localStorage.getItem('inflow_v13_weekly_drops')) || 0;
 
     /* ==========================================================================
        宣紙水墨暈染 Canvas：水滴著陸微水花與極致微透暈染
@@ -825,7 +874,7 @@
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      const savedCanvasData = localStorage.getItem('inflow_v12_canvas_snap');
+      const savedCanvasData = localStorage.getItem('inflow_v13_canvas_snap');
       if (savedCanvasData) {
         const img = new Image();
         img.onload = () => ctx.drawImage(img, 0, 0);
@@ -845,15 +894,12 @@
       };
     });
 
-    // 每次觸發：生成隨機座標，先落水後著陸綻開
     function triggerInkBloom() {
       const originX = Math.random() * (canvas.width * 0.7) + canvas.width * 0.15;
       const originY = Math.random() * (canvas.height * 0.65) + canvas.height * 0.18;
       const chosenColor = INK_COLORS[Math.floor(Math.random() * INK_COLORS.length)];
 
-      // 觸發清晰的落水動畫
       triggerDropletAnim(originX, originY, () => {
-        // 水滴觸底瞬間：綻放宣紙水墨暈
         activeBlooms.push({
           x: originX,
           y: originY,
@@ -886,7 +932,7 @@
           } else {
             activeBlooms.splice(i, 1);
             if (activeBlooms.length === 0) {
-              localStorage.setItem('inflow_v12_canvas_snap', canvas.toDataURL());
+              localStorage.setItem('inflow_v13_canvas_snap', canvas.toDataURL());
             }
           }
         }
@@ -894,7 +940,6 @@
       requestAnimationFrame(renderInkDiffusion);
     }
 
-    // 落水動畫：落至定點後觸發水花漣漪與回呼
     function triggerDropletAnim(destX, destY, onImpact) {
       const dropEl = document.getElementById('ambient-drop');
       const rippleEl = document.getElementById('ambient-ripple');
@@ -903,11 +948,10 @@
       dropEl.style.setProperty('--fall-dist', `${destY}px`);
 
       dropEl.style.animation = 'none';
-      dropEl.offsetHeight; // reflow
+      dropEl.offsetHeight;
       dropEl.style.animation = 'dropDownTarget 0.48s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards';
 
       setTimeout(() => {
-        // 觸底水花微漣漪
         rippleEl.style.left = `${destX}px`;
         rippleEl.style.top = `${destY}px`;
         rippleEl.style.animation = 'none';
@@ -918,47 +962,61 @@
       }, 460);
     }
 
+    /* ==========================================================================
+       跨日與 04:00 結算：習慣自動標示為未完成、待辦移至封存
+       ========================================================================== */
     function checkNewDayRollover() {
+      // 1. 同步頂部日曆日期
       const actual = getActualToday();
       todayStr = actual.dateStr;
-      currentDayIdx = actual.dayIdx;
-      document.getElementById('date-indicator').textContent = `${todayStr} (週${WEEK_DAYS[currentDayIdx]})`;
+      document.getElementById('date-indicator').textContent = `${todayStr} (週${WEEK_DAYS[actual.dayIdx]})`;
 
-      const currentCycle = get4AMEpochCycle();
-      const lastCycle = localStorage.getItem('inflow_v12_last_4am');
+      // 2. 檢查 04:00 週期交接
+      const { cycleStr: newCycle, habitDayIdx: newHabitIdx } = get4AMEpochCycle();
+      currentHabitDayIdx = newHabitIdx;
 
-      if (lastCycle && lastCycle !== currentCycle) {
+      const lastCycle = localStorage.getItem('inflow_v13_last_4am');
+
+      if (lastCycle && lastCycle !== newCycle) {
+        // (A) 待辦事項：完成者移入封存箱，保留未完成
         const completedToArchive = tasks.filter(t => t.completed);
         if (completedToArchive.length > 0) {
           archivedTasks = [...completedToArchive, ...archivedTasks].slice(0, 30);
-          localStorage.setItem('inflow_v12_archived', JSON.stringify(archivedTasks));
+          localStorage.setItem('inflow_v13_archived', JSON.stringify(archivedTasks));
         }
-
         tasks = tasks.filter(t => !t.completed);
 
+        // (B) 習慣事項：新週期到來，今日狀態強制標示為未完成 (false)
+        habits.forEach(h => {
+          if (h.history && h.history.length > currentHabitDayIdx) {
+            h.history[currentHabitDayIdx] = false;
+          }
+        });
+
+        // (C) 週一 04:00 重置整週習慣打卡陣列與宣紙畫卷
         const lastDateObj = new Date(lastCycle);
-        const todayDateObj = new Date(currentCycle);
+        const todayDateObj = new Date(newCycle);
         const isNewWeek = todayDateObj.getDay() === 1 && (todayDateObj - lastDateObj) >= 86400000;
 
         if (isNewWeek) {
           habits.forEach(h => { h.history = [false, false, false, false, false, false, false]; });
           weeklyDropCount = 0;
-          localStorage.setItem('inflow_v12_weekly_drops', '0');
+          localStorage.setItem('inflow_v13_weekly_drops', '0');
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          localStorage.removeItem('inflow_v12_canvas_snap');
+          localStorage.removeItem('inflow_v13_canvas_snap');
         }
       }
 
-      localStorage.setItem('inflow_v12_last_4am', currentCycle);
+      localStorage.setItem('inflow_v13_last_4am', newCycle);
     }
 
     let skippedItemIds = [];
 
     function saveData() {
-      localStorage.setItem('inflow_v12_tasks', JSON.stringify(tasks));
-      localStorage.setItem('inflow_v12_habits', JSON.stringify(habits));
-      localStorage.setItem('inflow_v12_archived', JSON.stringify(archivedTasks));
-      localStorage.setItem('inflow_v12_weekly_drops', String(weeklyDropCount));
+      localStorage.setItem('inflow_v13_tasks', JSON.stringify(tasks));
+      localStorage.setItem('inflow_v13_habits', JSON.stringify(habits));
+      localStorage.setItem('inflow_v13_archived', JSON.stringify(archivedTasks));
+      localStorage.setItem('inflow_v13_weekly_drops', String(weeklyDropCount));
       render();
     }
 
@@ -989,10 +1047,12 @@
       saveData();
     }
 
-    /* 毛玻璃 Bottom Sheet 彈窗 */
+    /* ==========================================================================
+       毛玻璃 Bottom Sheet 彈窗 (支援編輯與各象限直接新增)
+       ========================================================================== */
     let modalCallback = null;
 
-    function openCustomModal({ title, desc = '', initialValue = '', isDanger = false, confirmText = '確認', onConfirm }) {
+    function openCustomModal({ title, desc = '', initialValue = '', placeholder = '', isDanger = false, confirmText = '確認', onConfirm }) {
       const modal = document.getElementById('inflow-modal');
       const titleEl = document.getElementById('modal-title');
       const descEl = document.getElementById('modal-desc');
@@ -1010,6 +1070,7 @@
       if (initialValue !== null) {
         inputEl.style.display = 'block';
         inputEl.value = initialValue;
+        inputEl.placeholder = placeholder || '寫下一件專注事項...';
       } else {
         inputEl.style.display = 'none';
       }
@@ -1037,6 +1098,30 @@
       if (e.target.id === 'inflow-modal') closeModal();
     }
 
+    // 點選任一象限直接新增
+    function openAddModalForQuadrant(qid) {
+      const q = QUADRANTS[qid];
+      openCustomModal({
+        title: `新增至「${q.name}」`,
+        initialValue: '',
+        placeholder: '寫下該象限的專注待辦...',
+        confirmText: '加入待辦',
+        onConfirm: (val) => {
+          if (val && val.trim()) {
+            tasks.push({
+              id: String(Date.now()),
+              title: val.trim(),
+              quadrant: qid,
+              completed: false,
+              createdAt: Date.now()
+            });
+            triggerHaptic(15);
+            saveData();
+          }
+        }
+      });
+    }
+
     /* 建議下一件事推薦 */
     let currentHeroTarget = null;
 
@@ -1047,7 +1132,7 @@
       const q3Task = tasks.find(t => !t.completed && t.quadrant === 'q3' && !skippedItemIds.includes(t.id));
       if (q3Task) return { type: 'task', data: q3Task, label: '不重要但緊急待辦', color: QUADRANTS.q3 };
 
-      const pendingHabit = habits.find(h => !h.history[currentDayIdx] && !skippedItemIds.includes(h.id));
+      const pendingHabit = habits.find(h => !h.history[currentHabitDayIdx] && !skippedItemIds.includes(h.id));
       if (pendingHabit) return { type: 'habit', data: pendingHabit, label: '今日未完成習慣', color: HABIT_COLOR };
 
       const q2Task = tasks.find(t => !t.completed && t.quadrant === 'q2' && !skippedItemIds.includes(t.id));
@@ -1110,7 +1195,7 @@
       if (currentHeroTarget.type === 'task') {
         currentHeroTarget.data.completed = true;
       } else {
-        currentHeroTarget.data.history[currentDayIdx] = true;
+        currentHeroTarget.data.history[currentHabitDayIdx] = true;
       }
       registerCompletionReward();
     }
@@ -1210,7 +1295,7 @@
     }
 
     function toggleHabit(id, dayIdx, e) {
-      if (dayIdx > currentDayIdx) return; // 鎖定未來
+      if (dayIdx > currentHabitDayIdx) return; // 鎖定未來
 
       const h = habits.find(item => item.id === id);
       if (h) {
@@ -1220,23 +1305,6 @@
         if (h.history[dayIdx]) registerCompletionReward();
         else saveData();
       }
-    }
-
-    function createTask() {
-      const input = document.getElementById('new-task-title');
-      const q = document.getElementById('new-task-quadrant').value;
-      if (!input.value.trim()) return;
-
-      tasks.push({
-        id: String(Date.now()),
-        title: input.value.trim(),
-        quadrant: q,
-        completed: false,
-        createdAt: Date.now()
-      });
-      input.value = '';
-      triggerHaptic(15);
-      saveData();
     }
 
     function createHabit() {
@@ -1301,6 +1369,7 @@
         }).join('');
       }
 
+      // 每日習慣：依 04:00 週期判定今日是否完成
       const habitsListEl = document.getElementById('home-habits-list');
       const sortedHabits = [...habits].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
@@ -1308,9 +1377,9 @@
         habitsListEl.innerHTML = `<div style="text-align:center; padding:24px; color:var(--text-light); font-size:0.86rem; font-weight:500;">目前無未完成習慣</div>`;
       } else {
         habitsListEl.innerHTML = sortedHabits.map(h => {
-          const isDone = h.history[currentDayIdx];
+          const isDone = h.history[currentHabitDayIdx];
           return `
-            <div class="full-row-item ${isDone ? 'done' : ''}" onclick="toggleHabit('${h.id}', ${currentDayIdx}, event)">
+            <div class="full-row-item ${isDone ? 'done' : ''}" onclick="toggleHabit('${h.id}', ${currentHabitDayIdx}, event)">
               <div class="full-row-checkbox">${isDone ? '✓' : ''}</div>
               <div class="full-row-content">
                 <div class="full-row-text">${h.name}</div>
@@ -1327,7 +1396,7 @@
         const qTasks = tasks.filter(t => t.quadrant === qid && !t.completed);
 
         if (qTasks.length === 0) {
-          listEl.innerHTML = `<div style="font-size:0.75rem; opacity:0.5; margin-top:8px; letter-spacing:0.3px; font-weight:500;">輕按拖曳至此</div>`;
+          listEl.innerHTML = `<div style="font-size:0.75rem; opacity:0.5; margin-top:14px; text-align:center; letter-spacing:0.3px; font-weight:500;">暫無事項，可點擊新增</div>`;
         } else {
           listEl.innerHTML = qTasks.map(t => `
             <div class="q-task-card" draggable="true" data-id="${t.id}" data-quadrant="${qid}">
@@ -1393,8 +1462,8 @@
           </div>
           <div class="week-bubbles">
             ${h.history.map((checked, idx) => {
-              const isToday = idx === currentDayIdx;
-              const isFuture = idx > currentDayIdx;
+              const isToday = idx === currentHabitDayIdx;
+              const isFuture = idx > currentHabitDayIdx;
 
               let bubbleClass = 'day-bubble';
               if (checked) bubbleClass += ' checked';
@@ -1522,7 +1591,7 @@
     let touchCloneEl = null;
 
     function handleTouchStart(e) {
-      if (e.target.closest('.btn-action')) return;
+      if (e.target.closest('.btn-action') || e.target.closest('.btn-q-header-add') || e.target.closest('.btn-q-add-slot')) return;
 
       const card = e.currentTarget;
       let timer = setTimeout(() => {
