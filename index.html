@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>Inflow - 靜謐專注</title>
+
+  <link rel="manifest" href="data:application/manifest+json;utf-8,%7B%22name%22%3A%22Inflow%22%2C%22short_name%22%3A%22Inflow%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F8FAFC%22%2C%22theme_color%22%3A%22%232C4A63%22%7D">
+  <meta name="theme-color" content="#F8FAFC">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-base: #F8FAFC;
+      --surface-glass: rgba(255, 255, 255, 0.88);
+      --primary: #2C4A63;
+      --primary-deep: #1A3143;
+      
+      --text-main: #1C2833;
+      --text-sub: #566879;
+      --text-light: #94A3B3;
+      --border-subtle: rgba(200, 214, 226, 0.7);
+
+      --shadow-ambient: 0 16px 40px -10px rgba(32, 54, 76, 0.05), 0 4px 16px -4px rgba(32, 54, 76, 0.02);
+      --shadow-card: 0 6px 20px -3px rgba(32, 54, 76, 0.04), 0 2px 6px -1px rgba(32, 54, 76, 0.02);
+      --shadow-hero: 0 20px 48px -12px rgba(44, 74, 99, 0.14);
+
+      /* 四象限柔霧色彩 */
+      --q1-bg: #F3EDED; --q1-text: #7D4D4D; --q1-border: #E5D6D6;
+      --q3-bg: #F1F3E4; --q3-text: #5C6643; --q3-border: #DFE3CB;
+      --q2-bg: #E4F3E9; --q2-text: #3C664D; --q2-border: #CBE5D3;
+      --q4-bg: #E1EEF7; --q4-text: #345B75; --q4-border: #C8DCED;
+
+      --habit-bg: #E1EEF7; --habit-text: #345B75; --habit-border: #C8DCED;
+
+      --radius-xl: 24px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+      position: relative;
+      overflow-x: hidden;
+      overscroll-behavior-y: none;
+    }
+
+    /* 宣紙水墨暈染畫布 (極致微透) */
+    #ink-canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.16;
+    }
+
+    /* 顯著的單顆下落水滴與拖尾 */
+    .drop-particle {
+      position: fixed;
+      top: -30px;
+      width: 7px;
+      height: 16px;
+      background: linear-gradient(180deg, rgba(135, 206, 250, 0.1) 0%, rgba(135, 206, 250, 0.95) 100%);
+      box-shadow: 0 0 10px rgba(135, 206, 250, 0.8), 0 0 20px rgba(70, 130, 180, 0.3);
+      border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 99;
+    }
+    @keyframes dropDownTarget {
+      0% { transform: translateY(0) scaleY(0.7); opacity: 0; }
+      15% { opacity: 1; transform: translateY(20px) scaleY(1.3); }
+      85% { opacity: 1; }
+      100% { transform: translateY(var(--fall-dist)) scaleY(1); opacity: 0; }
+    }
+
+    /* 著陸水花漣漪光環 */
+    .impact-ripple {
+      position: fixed;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(135, 206, 250, 0.85);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 98;
+      transform: translate(-50%, -50%) scale(0.2);
+      opacity: 0;
+    }
+    @keyframes rippleExpand {
+      0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0.9; }
+      100% { transform: translate(-50%, -50%) scale(4.2); opacity: 0; }
+    }
+
+    header {
+      padding: 22px 24px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(248, 250, 252, 0.85);
+      backdrop-filter: blur(20px);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+    .brand-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.55rem;
+      font-weight: 600;
+      color: var(--primary-deep);
+      letter-spacing: -0.3px;
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+    }
+    .brand-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #87CEFA;
+      box-shadow: 0 0 8px rgba(135, 206, 250, 0.8);
+      display: inline-block;
+    }
+    .status-badge {
+      font-size: 0.73rem;
+      font-weight: 500;
+      color: var(--text-sub);
+      background: rgba(255, 255, 255, 0.85);
+      border: 1px solid var(--border-subtle);
+      padding: 5px 14px;
+      border-radius: 30px;
+      letter-spacing: 0.4px;
+      box-shadow: 0 2px 8px rgba(32, 54, 76, 0.03);
+    }
+
+    main {
+      flex: 1;
+      max-width: 580px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 8px 20px 105px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .view-container { display: none; }
+    .view-container.active { display: block; animation: smoothFadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    @keyframes smoothFadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 焦點卡片 */
+    .focus-card {
+      border-radius: var(--radius-xl);
+      padding: 26px 24px;
+      margin-bottom: 28px;
+      border: 1.5px solid;
+      box-shadow: var(--shadow-hero);
+      transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .focus-card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+    }
+    .focus-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+    .focus-title {
+      font-size: 1.32rem;
+      font-weight: 600;
+      line-height: 1.5;
+      margin-bottom: 22px;
+      word-break: break-word;
+      white-space: normal;
+      letter-spacing: -0.2px;
+    }
+    .focus-actions { display: flex; gap: 10px; }
+    .btn-focus {
+      border: 1px solid transparent;
+      outline: none;
+      padding: 10px 24px;
+      border-radius: 14px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      letter-spacing: 0.3px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .btn-focus:active { transform: scale(0.96); }
+
+    /* 列表排版 */
+    .section-header-wrap {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin: 28px 4px 12px;
+    }
+    .section-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-light);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+    }
+
+    .full-row-list { display: flex; flex-direction: column; gap: 10px; }
+    .full-row-item {
+      background: var(--surface-glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 15px 18px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      cursor: pointer;
+      position: relative;
+      box-shadow: var(--shadow-card);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .full-row-item:hover {
+      border-color: rgba(180, 198, 214, 0.9);
+      background: rgba(255, 255, 255, 0.95);
+      transform: translateY(-1px);
+    }
+    .full-row-item.done {
+      opacity: 0.42;
+      background: rgba(255, 255, 255, 0.4);
+      box-shadow: none;
+    }
+    .full-row-checkbox {
+      width: 22px;
+      height: 22px;
+      border-radius: 8px;
+      border: 1.5px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: #FFF;
+      flex-shrink: 0;
+      background: #FFFFFF;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .full-row-item.done .full-row-checkbox {
+      background: var(--primary);
+      border-color: var(--primary);
+      transform: scale(1.05);
+    }
+    .full-row-content { flex: 1; min-width: 0; }
+    .full-row-text {
+      font-size: 0.94rem;
+      color: var(--text-main);
+      line-height: 1.5;
+      word-break: break-word;
+      white-space: normal;
+      font-weight: 500;
+    }
+    .full-row-item.done .full-row-text { text-decoration: line-through; color: var(--text-light); }
+    
+    .badge-q {
+      font-size: 0.68rem;
+      padding: 3px 9px;
+      border-radius: 8px;
+      margin-left: 8px;
+      vertical-align: middle;
+      display: inline-block;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    .actions-group { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+    .btn-action {
+      background: none;
+      border: none;
+      color: var(--text-light);
+      cursor: pointer;
+      padding: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: all 0.15s ease;
+    }
+    .btn-action:hover { background: rgba(0,0,0,0.04); color: var(--primary-deep); }
+    .btn-action.delete:hover { color: #C0392B; background: #FCEAE8; }
+    .btn-action svg { width: 15px; height: 15px; stroke-width: 1.8; }
+
+    /* 象限佈局 */
+    .matrix-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .quadrant-box {
+      border-radius: var(--radius-xl);
+      padding: 16px 13px;
+      border: 1.5px solid;
+      min-height: 245px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-card);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .quadrant-box.drag-over {
+      border-style: dashed;
+      transform: scale(1.025);
+      box-shadow: 0 12px 30px rgba(44, 74, 99, 0.12);
+    }
+    .quadrant-box.q1 { background: var(--q1-bg); border-color: var(--q1-border); }
+    .quadrant-box.q3 { background: var(--q3-bg); border-color: var(--q3-border); }
+    .quadrant-box.q2 { background: var(--q2-bg); border-color: var(--q2-border); }
+    .quadrant-box.q4 { background: var(--q4-bg); border-color: var(--q4-border); }
+
+    .q-header {
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      letter-spacing: 0.4px;
+      border-bottom: 1px solid rgba(0,0,0,0.04);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .q1 .q-header { color: var(--q1-text); }
+    .q3 .q-header { color: var(--q3-text); }
+    .q2 .q-header { color: var(--q2-text); }
+    .q4 .q-header { color: var(--q4-text); }
+
+    .q-task-list { display: flex; flex-direction: column; gap: 9px; flex: 1; min-height: 50px; }
+    .q-task-card {
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: var(--radius-md);
+      padding: 11px 11px 11px 13px;
+      font-size: 0.84rem;
+      font-weight: 500;
+      color: var(--text-main);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+      word-break: break-word;
+      white-space: normal;
+      cursor: grab;
+      touch-action: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 6px;
+      line-height: 1.45;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .q-task-card:active { cursor: grabbing; }
+    .q-task-card.dragging { opacity: 0.2; }
+    .q-task-card.drag-insert-before { border-top: 2.5px solid var(--primary); }
+    .q-task-title-wrap { flex: 1; }
+
+    .add-box {
+      background: var(--surface-glass);
+      backdrop-filter: blur(18px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      margin-bottom: 22px;
+      box-shadow: var(--shadow-ambient);
+    }
+    .add-box input {
+      width: 100%;
+      border: none;
+      outline: none;
+      font-size: 0.94rem;
+      padding: 6px 0;
+      margin-bottom: 12px;
+      background: transparent;
+      color: var(--text-main);
+      font-weight: 500;
+    }
+    .add-box input::placeholder { color: var(--text-light); }
+    .add-box-meta { display: flex; gap: 10px; justify-content: space-between; align-items: center; }
+    .add-box-meta select {
+      border: 1px solid var(--border-subtle);
+      border-radius: 11px;
+      padding: 7px 12px;
+      font-size: 0.82rem;
+      background: rgba(255, 255, 255, 0.9);
+      color: var(--text-main);
+      outline: none;
+      font-weight: 500;
+    }
+    .btn-add {
+      background: var(--primary);
+      color: #FFF;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 11px;
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(44, 74, 99, 0.2);
+      transition: all 0.2s ease;
+    }
+    .btn-add:hover { background: var(--primary-deep); }
+
+    /* 近期已完成封存箱 */
+    .archived-wrapper {
+      margin-top: 14px;
+      background: var(--surface-glass);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    .archived-header {
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-sub);
+    }
+    .archived-content { display: none; padding: 0 14px 14px; }
+    .archived-content.show { display: block; }
+    .archived-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: rgba(255,255,255,0.7);
+      border-radius: var(--radius-md);
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+    }
+    .archived-item-title {
+      text-decoration: line-through;
+      color: var(--text-light);
+      flex: 1;
+      word-break: break-word;
+    }
+    .btn-restore {
+      background: none;
+      border: 1px solid var(--border-subtle);
+      padding: 3px 10px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      color: var(--primary);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    /* 習慣卡片 */
+    .habit-full-card {
+      background: var(--surface-glass);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      position: relative;
+      box-shadow: var(--shadow-card);
+    }
+    .habit-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+    .habit-full-title {
+      font-size: 0.98rem;
+      font-weight: 600;
+      color: var(--text-main);
+      word-break: break-word;
+      white-space: normal;
+      flex: 1;
+      padding-right: 8px;
+      line-height: 1.45;
+    }
+    .week-bubbles { display: flex; justify-content: space-between; align-items: center; }
+    .day-bubble-wrapper { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .day-label { font-size: 0.68rem; font-weight: 600; color: var(--text-light); }
+    .day-bubble {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border-subtle);
+      background: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .day-bubble.today { border-color: var(--primary); font-weight: 700; border-width: 2px; }
+    .day-bubble.checked {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #FFF;
+      box-shadow: 0 4px 10px rgba(44, 74, 99, 0.28);
+      transform: scale(1.04);
+    }
+    .day-bubble.disabled {
+      opacity: 0.25;
+      cursor: not-allowed;
+      background: rgba(230, 235, 240, 0.35);
+      border-color: transparent;
+      color: var(--text-light);
+    }
+
+    /* 點擊微波紋 */
+    .ripple-effect {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(135, 206, 250, 0.25);
+      transform: scale(0);
+      animation: ripple 0.5s ease-out;
+      pointer-events: none;
+    }
+    @keyframes ripple {
+      to { transform: scale(3.2); opacity: 0; }
+    }
+
+    /* 毛玻璃 Bottom Sheet */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(28, 40, 51, 0.32);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-sheet {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(24px);
+      border-top-left-radius: var(--radius-xl);
+      border-top-right-radius: var(--radius-xl);
+      width: 100%;
+      max-width: 580px;
+      padding: 24px 22px calc(24px + env(safe-area-inset-bottom));
+      box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.08);
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-overlay.active .modal-sheet { transform: translateY(0); }
+    .modal-title { font-size: 1.05rem; font-weight: 700; color: var(--primary-deep); margin-bottom: 8px; }
+    .modal-desc { font-size: 0.86rem; color: var(--text-sub); margin-bottom: 16px; line-height: 1.5; }
+    .modal-input {
+      width: 100%;
+      background: var(--bg-base);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      outline: none;
+      margin-bottom: 18px;
+    }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .btn-modal { border: none; padding: 10px 18px; border-radius: 12px; font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+    .btn-modal-cancel { background: #EAEFF4; color: var(--text-sub); }
+    .btn-modal-confirm { background: var(--primary); color: #FFF; }
+    .btn-modal-danger { background: #C0392B; color: #FFF; }
+
+    nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: rgba(248, 250, 252, 0.88);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-around;
+      padding: 11px 0 calc(14px + env(safe-area-inset-bottom));
+      z-index: 30;
+      max-width: 580px;
+      margin: 0 auto;
+    }
+    .nav-btn {
+      background: none;
+      border: none;
+      font-size: 0.72rem;
+      letter-spacing: 0.4px;
+      color: var(--text-light);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      width: 33.3%;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+    .nav-btn.active { color: var(--primary-deep); font-weight: 700; }
+    .nav-icon { width: 22px; height: 22px; stroke-width: 1.8; transition: transform 0.2s ease; }
+    .nav-btn.active .nav-icon { transform: translateY(-1px); }
+  </style>
+</head>
+<body>
+
+  <!-- 全螢幕宣紙水墨暈染畫布 (純白底開始) -->
+  <canvas id="ink-canvas"></canvas>
+  <div class="drop-particle" id="ambient-drop"></div>
+  <div class="impact-ripple" id="ambient-ripple"></div>
+
+  <header>
+    <div class="brand-title">Inflow<span class="brand-dot"></span></div>
+    <span class="status-badge" id="date-indicator">今日</span>
+  </header>
+
+  <main>
+    <!-- ==================== 1. 首頁 VIEW ==================== -->
+    <section id="view-home" class="view-container active">
+      <div class="focus-card" id="hero-card">
+        <div class="focus-badge" id="hero-tag">建議下一件事</div>
+        <div class="focus-title" id="hero-title">沉澱心靈，目前無待辦任務</div>
+
+        <div class="focus-actions" id="hero-actions">
+          <button class="btn-focus" id="btn-hero-complete" onclick="markHeroComplete()">
+            <span>完成</span>
+          </button>
+          <button class="btn-focus" id="btn-hero-skip" onclick="skipHeroItem()">
+            <span>換下一個</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="section-header-wrap">
+        <div class="section-title">待辦事項</div>
+      </div>
+      <div class="full-row-list" id="home-tasks-list"></div>
+
+      <div class="section-header-wrap">
+        <div class="section-title">每日習慣</div>
+      </div>
+      <div class="full-row-list" id="home-habits-list"></div>
+    </section>
+
+    <!-- ==================== 2. 待辦象限 VIEW ==================== -->
+    <section id="view-tasks" class="view-container">
+      <div class="add-box">
+        <input type="text" id="new-task-title" placeholder="寫下一件專注事項..." />
+        <div class="add-box-meta">
+          <select id="new-task-quadrant">
+            <option value="q1">重要且緊急</option>
+            <option value="q3">不重要但緊急</option>
+            <option value="q2">重要不緊急</option>
+            <option value="q4">不重要不緊急</option>
+          </select>
+          <button class="btn-add" onclick="createTask()">加入待辦</button>
+        </div>
+      </div>
+
+      <div class="matrix-grid">
+        <div class="quadrant-box q1" data-quadrant="q1">
+          <div class="q-header">重要且緊急</div>
+          <div class="q-task-list" id="quadrant-q1"></div>
+        </div>
+        <div class="quadrant-box q3" data-quadrant="q3">
+          <div class="q-header">不重要但緊急</div>
+          <div class="q-task-list" id="quadrant-q3"></div>
+        </div>
+        <div class="quadrant-box q2" data-quadrant="q2">
+          <div class="q-header">重要不緊急</div>
+          <div class="q-task-list" id="quadrant-q2"></div>
+        </div>
+        <div class="quadrant-box q4" data-quadrant="q4">
+          <div class="q-header">不重要不緊急</div>
+          <div class="q-task-list" id="quadrant-q4"></div>
+        </div>
+      </div>
+
+      <!-- 近期已完成封存箱 -->
+      <div class="archived-wrapper">
+        <div class="archived-header" onclick="toggleArchivedBox()">
+          <span id="archived-title-text">近期已完成事項 (0)</span>
+          <span id="archived-arrow">▼</span>
+        </div>
+        <div class="archived-content" id="archived-content-list"></div>
+      </div>
+    </section>
+
+    <!-- ==================== 3. 習慣打卡 VIEW ==================== -->
+    <section id="view-habits" class="view-container">
+      <div class="add-box">
+        <input type="text" id="new-habit-name" placeholder="建立一個每日習慣..." />
+        <div class="add-box-meta" style="justify-content: flex-end;">
+          <button class="btn-add" onclick="createHabit()">加入習慣</button>
+        </div>
+      </div>
+
+      <div class="full-row-list" id="all-habits-container"></div>
+    </section>
+  </main>
+
+  <!-- 內嵌毛玻璃 Bottom Sheet 彈窗 -->
+  <div class="modal-overlay" id="inflow-modal" onclick="closeModalOnOverlay(event)">
+    <div class="modal-sheet">
+      <div class="modal-title" id="modal-title">編輯項目</div>
+      <div class="modal-desc" id="modal-desc" style="display:none;"></div>
+      <input type="text" class="modal-input" id="modal-input" />
+      <div class="modal-actions">
+        <button class="btn-modal btn-modal-cancel" onclick="closeModal()">取消</button>
+        <button class="btn-modal btn-modal-confirm" id="modal-confirm-btn">確認</button>
+      </div>
+    </div>
+  </div>
+
+  <nav>
+    <button class="nav-btn active" onclick="switchView('home', this)">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+      </svg>
+      <span>首頁</span>
+    </button>
+    <button class="nav-btn" onclick="switchView('tasks', this)">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+      </svg>
+      <span>待辦清單</span>
+    </button>
+    <button class="nav-btn" onclick="switchView('habits', this)">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <span>習慣打卡</span>
+    </button>
+  </nav>
+
+  <script>
+    const QUADRANTS = {
+      q1: { name: '重要且緊急', bg: 'var(--q1-bg)', text: 'var(--q1-text)', border: 'var(--q1-border)' },
+      q3: { name: '不重要但緊急', bg: 'var(--q3-bg)', text: 'var(--q3-text)', border: 'var(--q3-border)' },
+      q2: { name: '重要不緊急', bg: 'var(--q2-bg)', text: 'var(--q2-text)', border: 'var(--q2-border)' },
+      q4: { name: '不重要不緊急', bg: 'var(--q4-bg)', text: 'var(--q4-text)', border: 'var(--q4-border)' }
+    };
+
+    const QUADRANT_ORDER = { q1: 1, q3: 2, q2: 3, q4: 4 };
+
+    const HABIT_COLOR = {
+      bg: 'var(--habit-bg)',
+      text: 'var(--habit-text)',
+      border: 'var(--habit-border)'
+    };
+
+    const WEEK_DAYS = ['一', '二', '三', '四', '五', '六', '日'];
+
+    function getActualToday() {
+      const now = new Date();
+      const y = now.getFullYear();
+      const m = String(now.getMonth() + 1).padStart(2, '0');
+      const d = String(now.getDate()).padStart(2, '0');
+      const dayOfWeek = now.getDay();
+      const dayIdx = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      return { dateStr: `${y}-${m}-${d}`, dayIdx };
+    }
+
+    function get4AMEpochCycle() {
+      const offsetDate = new Date(Date.now() - 4 * 60 * 60 * 1000);
+      const y = offsetDate.getFullYear();
+      const m = String(offsetDate.getMonth() + 1).padStart(2, '0');
+      const d = String(offsetDate.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    let { dateStr: todayStr, dayIdx: currentDayIdx } = getActualToday();
+
+    // 狀態持久化
+    let tasks = JSON.parse(localStorage.getItem('inflow_v12_tasks')) || [];
+    let habits = JSON.parse(localStorage.getItem('inflow_v12_habits')) || [];
+    let archivedTasks = JSON.parse(localStorage.getItem('inflow_v12_archived')) || [];
+    let weeklyDropCount = parseInt(localStorage.getItem('inflow_v12_weekly_drops')) || 0;
+
+    /* ==========================================================================
+       宣紙水墨暈染 Canvas：水滴著陸微水花與極致微透暈染
+       ========================================================================== */
+    const canvas = document.getElementById('ink-canvas');
+    const ctx = canvas.getContext('2d');
+    let activeBlooms = [];
+
+    const INK_COLORS = [
+      { r: 135, g: 206, b: 250 }, // #87cefa 天藍
+      { r: 135, g: 206, b: 235 }, // #87ceeb 晴空藍
+      { r: 70,  g: 130, b: 180 }  // #4682b4 鋼藍
+    ];
+
+    function initCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      const savedCanvasData = localStorage.getItem('inflow_v12_canvas_snap');
+      if (savedCanvasData) {
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0);
+        img.src = savedCanvasData;
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      const tempImg = new Image();
+      tempImg.src = canvas.toDataURL();
+      tempImg.onload = () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        ctx.drawImage(tempImg, 0, 0);
+      };
+    });
+
+    // 每次觸發：生成隨機座標，先落水後著陸綻開
+    function triggerInkBloom() {
+      const originX = Math.random() * (canvas.width * 0.7) + canvas.width * 0.15;
+      const originY = Math.random() * (canvas.height * 0.65) + canvas.height * 0.18;
+      const chosenColor = INK_COLORS[Math.floor(Math.random() * INK_COLORS.length)];
+
+      // 觸發清晰的落水動畫
+      triggerDropletAnim(originX, originY, () => {
+        // 水滴觸底瞬間：綻放宣紙水墨暈
+        activeBlooms.push({
+          x: originX,
+          y: originY,
+          currentRadius: 6,
+          maxRadius: Math.random() * 35 + 50,
+          color: chosenColor,
+          growthRate: 0.7
+        });
+      });
+    }
+
+    function renderInkDiffusion() {
+      if (activeBlooms.length > 0) {
+        for (let i = activeBlooms.length - 1; i >= 0; i--) {
+          const b = activeBlooms[i];
+
+          const radGrad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.currentRadius);
+          radGrad.addColorStop(0, `rgba(${b.color.r}, ${b.color.g}, ${b.color.b}, 0.018)`);
+          radGrad.addColorStop(0.5, `rgba(${b.color.r}, ${b.color.g}, ${b.color.b}, 0.008)`);
+          radGrad.addColorStop(1, `rgba(${b.color.r}, ${b.color.g}, ${b.color.b}, 0)`);
+
+          ctx.fillStyle = radGrad;
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.currentRadius, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (b.currentRadius < b.maxRadius) {
+            b.currentRadius += b.growthRate;
+            b.growthRate *= 0.985;
+          } else {
+            activeBlooms.splice(i, 1);
+            if (activeBlooms.length === 0) {
+              localStorage.setItem('inflow_v12_canvas_snap', canvas.toDataURL());
+            }
+          }
+        }
+      }
+      requestAnimationFrame(renderInkDiffusion);
+    }
+
+    // 落水動畫：落至定點後觸發水花漣漪與回呼
+    function triggerDropletAnim(destX, destY, onImpact) {
+      const dropEl = document.getElementById('ambient-drop');
+      const rippleEl = document.getElementById('ambient-ripple');
+
+      dropEl.style.left = `${destX}px`;
+      dropEl.style.setProperty('--fall-dist', `${destY}px`);
+
+      dropEl.style.animation = 'none';
+      dropEl.offsetHeight; // reflow
+      dropEl.style.animation = 'dropDownTarget 0.48s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards';
+
+      setTimeout(() => {
+        // 觸底水花微漣漪
+        rippleEl.style.left = `${destX}px`;
+        rippleEl.style.top = `${destY}px`;
+        rippleEl.style.animation = 'none';
+        rippleEl.offsetHeight;
+        rippleEl.style.animation = 'rippleExpand 0.55s ease-out forwards';
+
+        if (onImpact) onImpact();
+      }, 460);
+    }
+
+    function checkNewDayRollover() {
+      const actual = getActualToday();
+      todayStr = actual.dateStr;
+      currentDayIdx = actual.dayIdx;
+      document.getElementById('date-indicator').textContent = `${todayStr} (週${WEEK_DAYS[currentDayIdx]})`;
+
+      const currentCycle = get4AMEpochCycle();
+      const lastCycle = localStorage.getItem('inflow_v12_last_4am');
+
+      if (lastCycle && lastCycle !== currentCycle) {
+        const completedToArchive = tasks.filter(t => t.completed);
+        if (completedToArchive.length > 0) {
+          archivedTasks = [...completedToArchive, ...archivedTasks].slice(0, 30);
+          localStorage.setItem('inflow_v12_archived', JSON.stringify(archivedTasks));
+        }
+
+        tasks = tasks.filter(t => !t.completed);
+
+        const lastDateObj = new Date(lastCycle);
+        const todayDateObj = new Date(currentCycle);
+        const isNewWeek = todayDateObj.getDay() === 1 && (todayDateObj - lastDateObj) >= 86400000;
+
+        if (isNewWeek) {
+          habits.forEach(h => { h.history = [false, false, false, false, false, false, false]; });
+          weeklyDropCount = 0;
+          localStorage.setItem('inflow_v12_weekly_drops', '0');
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          localStorage.removeItem('inflow_v12_canvas_snap');
+        }
+      }
+
+      localStorage.setItem('inflow_v12_last_4am', currentCycle);
+    }
+
+    let skippedItemIds = [];
+
+    function saveData() {
+      localStorage.setItem('inflow_v12_tasks', JSON.stringify(tasks));
+      localStorage.setItem('inflow_v12_habits', JSON.stringify(habits));
+      localStorage.setItem('inflow_v12_archived', JSON.stringify(archivedTasks));
+      localStorage.setItem('inflow_v12_weekly_drops', String(weeklyDropCount));
+      render();
+    }
+
+    function triggerHaptic(pattern = 15) {
+      if ('vibrate' in navigator) {
+        try { navigator.vibrate(pattern); } catch (e) {}
+      }
+    }
+
+    function createRipple(e, el) {
+      const circle = document.createElement('span');
+      const d = Math.max(el.clientWidth, el.clientHeight);
+      const r = d / 2;
+      const rect = el.getBoundingClientRect();
+      circle.style.width = circle.style.height = `${d}px`;
+      circle.style.left = `${(e.clientX || rect.left + r) - rect.left - r}px`;
+      circle.style.top = `${(e.clientY || rect.top + r) - rect.top - r}px`;
+      circle.classList.add('ripple-effect');
+      const ex = el.querySelector('.ripple-effect');
+      if (ex) ex.remove();
+      el.appendChild(circle);
+      setTimeout(() => circle.remove(), 500);
+    }
+
+    function registerCompletionReward() {
+      weeklyDropCount++;
+      triggerInkBloom();
+      saveData();
+    }
+
+    /* 毛玻璃 Bottom Sheet 彈窗 */
+    let modalCallback = null;
+
+    function openCustomModal({ title, desc = '', initialValue = '', isDanger = false, confirmText = '確認', onConfirm }) {
+      const modal = document.getElementById('inflow-modal');
+      const titleEl = document.getElementById('modal-title');
+      const descEl = document.getElementById('modal-desc');
+      const inputEl = document.getElementById('modal-input');
+      const confirmBtn = document.getElementById('modal-confirm-btn');
+
+      titleEl.textContent = title;
+      if (desc) {
+        descEl.textContent = desc;
+        descEl.style.display = 'block';
+      } else {
+        descEl.style.display = 'none';
+      }
+
+      if (initialValue !== null) {
+        inputEl.style.display = 'block';
+        inputEl.value = initialValue;
+      } else {
+        inputEl.style.display = 'none';
+      }
+
+      confirmBtn.textContent = confirmText;
+      confirmBtn.className = isDanger ? 'btn-modal btn-modal-danger' : 'btn-modal btn-modal-confirm';
+
+      modalCallback = onConfirm;
+      confirmBtn.onclick = () => {
+        if (modalCallback) modalCallback(inputEl.value);
+        closeModal();
+      };
+
+      modal.classList.add('active');
+      if (initialValue !== null) setTimeout(() => inputEl.focus(), 150);
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('inflow-modal');
+      modal.classList.remove('active');
+      modalCallback = null;
+    }
+
+    function closeModalOnOverlay(e) {
+      if (e.target.id === 'inflow-modal') closeModal();
+    }
+
+    /* 建議下一件事推薦 */
+    let currentHeroTarget = null;
+
+    function getNextRecommendation() {
+      const q1Task = tasks.find(t => !t.completed && t.quadrant === 'q1' && !skippedItemIds.includes(t.id));
+      if (q1Task) return { type: 'task', data: q1Task, label: '重要且緊急待辦', color: QUADRANTS.q1 };
+
+      const q3Task = tasks.find(t => !t.completed && t.quadrant === 'q3' && !skippedItemIds.includes(t.id));
+      if (q3Task) return { type: 'task', data: q3Task, label: '不重要但緊急待辦', color: QUADRANTS.q3 };
+
+      const pendingHabit = habits.find(h => !h.history[currentDayIdx] && !skippedItemIds.includes(h.id));
+      if (pendingHabit) return { type: 'habit', data: pendingHabit, label: '今日未完成習慣', color: HABIT_COLOR };
+
+      const q2Task = tasks.find(t => !t.completed && t.quadrant === 'q2' && !skippedItemIds.includes(t.id));
+      if (q2Task) return { type: 'task', data: q2Task, label: '重要不緊急待辦', color: QUADRANTS.q2 };
+
+      const q4Task = tasks.find(t => !t.completed && t.quadrant === 'q4' && !skippedItemIds.includes(t.id));
+      if (q4Task) return { type: 'task', data: q4Task, label: '不重要不緊急待辦', color: QUADRANTS.q4 };
+
+      if (skippedItemIds.length > 0) {
+        skippedItemIds = [];
+        return getNextRecommendation();
+      }
+      return null;
+    }
+
+    function renderHero() {
+      currentHeroTarget = getNextRecommendation();
+      const cardEl = document.getElementById('hero-card');
+      const titleEl = document.getElementById('hero-title');
+      const tagEl = document.getElementById('hero-tag');
+      const actionsEl = document.getElementById('hero-actions');
+      const btnComplete = document.getElementById('btn-hero-complete');
+      const btnSkip = document.getElementById('btn-hero-skip');
+
+      if (currentHeroTarget) {
+        const c = currentHeroTarget.color;
+        cardEl.style.backgroundColor = c.bg;
+        cardEl.style.borderColor = c.border;
+        cardEl.style.color = c.text;
+
+        tagEl.textContent = currentHeroTarget.label;
+        tagEl.style.color = c.text;
+
+        titleEl.textContent = currentHeroTarget.type === 'task' ? currentHeroTarget.data.title : currentHeroTarget.data.name;
+        actionsEl.style.display = 'flex';
+
+        btnComplete.style.backgroundColor = c.text;
+        btnComplete.style.color = '#FFFFFF';
+
+        btnSkip.style.backgroundColor = 'rgba(255, 255, 255, 0.85)';
+        btnSkip.style.color = c.text;
+        btnSkip.style.borderColor = c.border;
+      } else {
+        cardEl.style.backgroundColor = 'var(--surface-glass)';
+        cardEl.style.borderColor = 'var(--border-subtle)';
+        cardEl.style.color = 'var(--text-main)';
+
+        tagEl.textContent = '無待辦事項';
+        tagEl.style.color = 'var(--text-light)';
+
+        titleEl.textContent = '沉澱心靈，享受當下的安寧。';
+        actionsEl.style.display = 'none';
+      }
+    }
+
+    function markHeroComplete() {
+      if (!currentHeroTarget) return;
+      triggerHaptic([20, 40]);
+
+      if (currentHeroTarget.type === 'task') {
+        currentHeroTarget.data.completed = true;
+      } else {
+        currentHeroTarget.data.history[currentDayIdx] = true;
+      }
+      registerCompletionReward();
+    }
+
+    function skipHeroItem() {
+      if (!currentHeroTarget) return;
+      triggerHaptic(10);
+      skippedItemIds.push(currentHeroTarget.data.id);
+      renderHero();
+    }
+
+    /* 任務與習慣互動 */
+    function toggleTask(id) {
+      const t = tasks.find(item => item.id === id);
+      if (t) {
+        t.completed = !t.completed;
+        triggerHaptic(15);
+        if (t.completed) registerCompletionReward();
+        else saveData();
+      }
+    }
+
+    function editTask(id, e) {
+      if (e) e.stopPropagation();
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      openCustomModal({
+        title: '編輯待辦事項',
+        initialValue: task.title,
+        confirmText: '儲存',
+        onConfirm: (val) => {
+          if (val && val.trim()) {
+            task.title = val.trim();
+            triggerHaptic(15);
+            saveData();
+          }
+        }
+      });
+    }
+
+    function deleteTaskWithConfirm(id, e) {
+      if (e) e.stopPropagation();
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      openCustomModal({
+        title: '刪除待辦事項',
+        desc: `確定要刪除「${task.title}」嗎？此操作無法復原。`,
+        initialValue: null,
+        isDanger: true,
+        confirmText: '確認刪除',
+        onConfirm: () => {
+          triggerHaptic(20);
+          tasks = tasks.filter(t => t.id !== id);
+          saveData();
+        }
+      });
+    }
+
+    function editHabit(id, e) {
+      if (e) e.stopPropagation();
+      const habit = habits.find(h => h.id === id);
+      if (!habit) return;
+
+      openCustomModal({
+        title: '編輯習慣名稱',
+        initialValue: habit.name,
+        confirmText: '儲存',
+        onConfirm: (val) => {
+          if (val && val.trim()) {
+            habit.name = val.trim();
+            triggerHaptic(15);
+            saveData();
+          }
+        }
+      });
+    }
+
+    function deleteHabitWithConfirm(id, e) {
+      if (e) e.stopPropagation();
+      const habit = habits.find(h => h.id === id);
+      if (!habit) return;
+
+      openCustomModal({
+        title: '刪除習慣',
+        desc: `確定要刪除習慣「${habit.name}」嗎？紀錄將被移除。`,
+        initialValue: null,
+        isDanger: true,
+        confirmText: '確認刪除',
+        onConfirm: () => {
+          triggerHaptic(20);
+          habits = habits.filter(h => h.id !== id);
+          saveData();
+        }
+      });
+    }
+
+    function toggleHabit(id, dayIdx, e) {
+      if (dayIdx > currentDayIdx) return; // 鎖定未來
+
+      const h = habits.find(item => item.id === id);
+      if (h) {
+        if (e) createRipple(e, e.currentTarget);
+        triggerHaptic(15);
+        h.history[dayIdx] = !h.history[dayIdx];
+        if (h.history[dayIdx]) registerCompletionReward();
+        else saveData();
+      }
+    }
+
+    function createTask() {
+      const input = document.getElementById('new-task-title');
+      const q = document.getElementById('new-task-quadrant').value;
+      if (!input.value.trim()) return;
+
+      tasks.push({
+        id: String(Date.now()),
+        title: input.value.trim(),
+        quadrant: q,
+        completed: false,
+        createdAt: Date.now()
+      });
+      input.value = '';
+      triggerHaptic(15);
+      saveData();
+    }
+
+    function createHabit() {
+      const input = document.getElementById('new-habit-name');
+      if (!input.value.trim()) return;
+
+      habits.unshift({
+        id: 'h_' + Date.now(),
+        name: input.value.trim(),
+        history: [false, false, false, false, false, false, false],
+        createdAt: Date.now()
+      });
+      input.value = '';
+      triggerHaptic(15);
+      saveData();
+    }
+
+    let isArchivedOpen = false;
+    function toggleArchivedBox() {
+      isArchivedOpen = !isArchivedOpen;
+      document.getElementById('archived-content-list').classList.toggle('show', isArchivedOpen);
+      document.getElementById('archived-arrow').textContent = isArchivedOpen ? '▲' : '▼';
+    }
+
+    function restoreTask(id) {
+      const idx = archivedTasks.findIndex(t => t.id === id);
+      if (idx !== -1) {
+        const [task] = archivedTasks.splice(idx, 1);
+        task.completed = false;
+        tasks.push(task);
+        triggerHaptic(15);
+        saveData();
+      }
+    }
+
+    /* 視圖渲染 */
+    function renderHome() {
+      renderHero();
+
+      const tasksListEl = document.getElementById('home-tasks-list');
+      const sortedTasks = [...tasks].sort((a, b) => {
+        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+        return (QUADRANT_ORDER[a.quadrant] || 99) - (QUADRANT_ORDER[b.quadrant] || 99);
+      });
+
+      if (sortedTasks.length === 0) {
+        tasksListEl.innerHTML = `<div style="text-align:center; padding:24px; color:var(--text-light); font-size:0.86rem; font-weight:500;">目前無待辦事項</div>`;
+      } else {
+        tasksListEl.innerHTML = sortedTasks.map(t => {
+          const q = QUADRANTS[t.quadrant];
+          return `
+            <div class="full-row-item ${t.completed ? 'done' : ''}" onclick="toggleTask('${t.id}')">
+              <div class="full-row-checkbox">${t.completed ? '✓' : ''}</div>
+              <div class="full-row-content">
+                <div class="full-row-text">
+                  ${t.title}
+                  <span class="badge-q" style="background:${q.bg}; color:${q.text}; border: 1px solid ${q.border};">${q.name}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      const habitsListEl = document.getElementById('home-habits-list');
+      const sortedHabits = [...habits].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      if (sortedHabits.length === 0) {
+        habitsListEl.innerHTML = `<div style="text-align:center; padding:24px; color:var(--text-light); font-size:0.86rem; font-weight:500;">目前無未完成習慣</div>`;
+      } else {
+        habitsListEl.innerHTML = sortedHabits.map(h => {
+          const isDone = h.history[currentDayIdx];
+          return `
+            <div class="full-row-item ${isDone ? 'done' : ''}" onclick="toggleHabit('${h.id}', ${currentDayIdx}, event)">
+              <div class="full-row-checkbox">${isDone ? '✓' : ''}</div>
+              <div class="full-row-content">
+                <div class="full-row-text">${h.name}</div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function renderQuadrants() {
+      ['q1', 'q3', 'q2', 'q4'].forEach(qid => {
+        const listEl = document.getElementById(`quadrant-${qid}`);
+        const qTasks = tasks.filter(t => t.quadrant === qid && !t.completed);
+
+        if (qTasks.length === 0) {
+          listEl.innerHTML = `<div style="font-size:0.75rem; opacity:0.5; margin-top:8px; letter-spacing:0.3px; font-weight:500;">輕按拖曳至此</div>`;
+        } else {
+          listEl.innerHTML = qTasks.map(t => `
+            <div class="q-task-card" draggable="true" data-id="${t.id}" data-quadrant="${qid}">
+              <div class="q-task-title-wrap">${t.title}</div>
+              <div class="actions-group">
+                <button class="btn-action edit" title="編輯" onclick="editTask('${t.id}', event)">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                </button>
+                <button class="btn-action delete" title="刪除" onclick="deleteTaskWithConfirm('${t.id}', event)">
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          `).join('');
+        }
+      });
+
+      document.getElementById('archived-title-text').textContent = `近期已完成事項 (${archivedTasks.length})`;
+      const archivedListEl = document.getElementById('archived-content-list');
+      if (archivedTasks.length === 0) {
+        archivedListEl.innerHTML = `<div style="text-align:center; padding:12px; font-size:0.8rem; color:var(--text-light);">暫無封存項目</div>`;
+      } else {
+        archivedListEl.innerHTML = archivedTasks.map(t => `
+          <div class="archived-item">
+            <span class="archived-item-title">${t.title}</span>
+            <button class="btn-restore" onclick="restoreTask('${t.id}')">復原</button>
+          </div>
+        `).join('');
+      }
+
+      attachDragEvents();
+    }
+
+    function renderHabitsView() {
+      const container = document.getElementById('all-habits-container');
+      const sortedHabits = [...habits].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      if (sortedHabits.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:32px; color:var(--text-light); font-size:0.86rem; font-weight:500;">目前無建立的習慣</div>`;
+        return;
+      }
+
+      container.innerHTML = sortedHabits.map(h => `
+        <div class="habit-full-card">
+          <div class="habit-card-header">
+            <div class="habit-full-title">${h.name}</div>
+            <div class="actions-group">
+              <button class="btn-action edit" title="編輯習慣" onclick="editHabit('${h.id}', event)">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+              <button class="btn-action delete" title="刪除習慣" onclick="deleteHabitWithConfirm('${h.id}', event)">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="week-bubbles">
+            ${h.history.map((checked, idx) => {
+              const isToday = idx === currentDayIdx;
+              const isFuture = idx > currentDayIdx;
+
+              let bubbleClass = 'day-bubble';
+              if (checked) bubbleClass += ' checked';
+              if (isToday) bubbleClass += ' today';
+              if (isFuture) bubbleClass += ' disabled';
+
+              return `
+                <div class="day-bubble-wrapper">
+                  <span class="day-label">${WEEK_DAYS[idx]}</span>
+                  <div class="${bubbleClass}"
+                       ${isFuture ? '' : `onclick="toggleHabit('${h.id}', ${idx}, event)"`}>
+                    ${checked ? '✓' : ''}
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function render() {
+      renderHome();
+      renderQuadrants();
+      renderHabitsView();
+    }
+
+    /* 拖曳操作 */
+    let draggedTaskId = null;
+
+    function attachDragEvents() {
+      const cards = document.querySelectorAll('.q-task-card');
+      const dropBoxes = document.querySelectorAll('.quadrant-box');
+
+      cards.forEach(card => {
+        card.addEventListener('dragstart', (e) => {
+          draggedTaskId = card.getAttribute('data-id');
+          card.classList.add('dragging');
+          e.dataTransfer.setData('text/plain', draggedTaskId);
+        });
+
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+          cards.forEach(c => c.classList.remove('drag-insert-before'));
+          dropBoxes.forEach(b => b.classList.remove('drag-over'));
+        });
+
+        card.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (card.getAttribute('data-id') !== draggedTaskId) {
+            card.classList.add('drag-insert-before');
+          }
+        });
+
+        card.addEventListener('dragleave', () => {
+          card.classList.remove('drag-insert-before');
+        });
+
+        card.addEventListener('drop', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          card.classList.remove('drag-insert-before');
+          const targetCardId = card.getAttribute('data-id');
+          const targetQuadrant = card.getAttribute('data-quadrant');
+          if (draggedTaskId && targetCardId && draggedTaskId !== targetCardId) {
+            reorderTask(draggedTaskId, targetCardId, targetQuadrant);
+          }
+        });
+
+        card.addEventListener('touchstart', handleTouchStart, { passive: false });
+      });
+
+      dropBoxes.forEach(box => {
+        box.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          box.classList.add('drag-over');
+        });
+
+        box.addEventListener('dragleave', () => {
+          box.classList.remove('drag-over');
+        });
+
+        box.addEventListener('drop', (e) => {
+          e.preventDefault();
+          box.classList.remove('drag-over');
+          const targetQuadrant = box.getAttribute('data-quadrant');
+          if (draggedTaskId && targetQuadrant) {
+            moveTaskToQuadrantEnd(draggedTaskId, targetQuadrant);
+          }
+        });
+      });
+    }
+
+    function reorderTask(sourceId, targetId, targetQuadrant) {
+      const srcIndex = tasks.findIndex(t => t.id === sourceId);
+      if (srcIndex === -1) return;
+
+      const [movedTask] = tasks.splice(srcIndex, 1);
+      movedTask.quadrant = targetQuadrant;
+
+      const destIndex = tasks.findIndex(t => t.id === targetId);
+      if (destIndex !== -1) {
+        tasks.splice(destIndex, 0, movedTask);
+      } else {
+        tasks.push(movedTask);
+      }
+
+      triggerHaptic([20, 25]);
+      saveData();
+    }
+
+    function moveTaskToQuadrantEnd(taskId, newQuadrant) {
+      const taskIndex = tasks.findIndex(t => t.id === taskId);
+      if (taskIndex === -1) return;
+
+      const [task] = tasks.splice(taskIndex, 1);
+      task.quadrant = newQuadrant;
+      tasks.push(task);
+
+      triggerHaptic([20, 25]);
+      saveData();
+    }
+
+    let touchCloneEl = null;
+
+    function handleTouchStart(e) {
+      if (e.target.closest('.btn-action')) return;
+
+      const card = e.currentTarget;
+      let timer = setTimeout(() => {
+        draggedTaskId = card.getAttribute('data-id');
+        triggerHaptic(20);
+
+        touchCloneEl = card.cloneNode(true);
+        touchCloneEl.style.position = 'fixed';
+        touchCloneEl.style.zIndex = '999';
+        touchCloneEl.style.opacity = '0.9';
+        touchCloneEl.style.pointerEvents = 'none';
+        touchCloneEl.style.boxShadow = '0 12px 30px rgba(0,0,0,0.18)';
+        touchCloneEl.style.width = `${card.offsetWidth}px`;
+        document.body.appendChild(touchCloneEl);
+
+        card.classList.add('dragging');
+      }, 200);
+
+      function handleTouchMove(moveEvent) {
+        if (!touchCloneEl) {
+          clearTimeout(timer);
+          return;
+        }
+        moveEvent.preventDefault();
+        const touch = moveEvent.touches[0];
+        touchCloneEl.style.left = `${touch.clientX - 50}px`;
+        touchCloneEl.style.top = `${touch.clientY - 20}px`;
+      }
+
+      function handleTouchEnd(endEvent) {
+        clearTimeout(timer);
+        if (touchCloneEl) {
+          touchCloneEl.remove();
+          touchCloneEl = null;
+          card.classList.remove('dragging');
+
+          const touch = endEvent.changedTouches[0];
+          const elemBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+          const targetCard = elemBelow ? elemBelow.closest('.q-task-card') : null;
+          const targetBox = elemBelow ? elemBelow.closest('.quadrant-box') : null;
+
+          if (targetCard && targetCard.getAttribute('data-id') !== draggedTaskId) {
+            reorderTask(draggedTaskId, targetCard.getAttribute('data-id'), targetCard.getAttribute('data-quadrant'));
+          } else if (targetBox) {
+            moveTaskToQuadrantEnd(draggedTaskId, targetBox.getAttribute('data-quadrant'));
+          }
+        }
+        card.removeEventListener('touchmove', handleTouchMove);
+        card.removeEventListener('touchend', handleTouchEnd);
+      }
+
+      card.addEventListener('touchmove', handleTouchMove, { passive: false });
+      card.addEventListener('touchend', handleTouchEnd);
+    }
+
+    function switchView(viewName, btn) {
+      document.querySelectorAll('.view-container').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(`view-${viewName}`).classList.add('active');
+      btn.classList.add('active');
+      triggerHaptic(10);
+      window.scrollTo(0, 0);
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        checkNewDayRollover();
+        render();
+      }
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        const swScript = `
+          self.addEventListener('install', e => self.skipWaiting());
+          self.addEventListener('activate', e => clients.claim());
+          self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
+        `;
+        const blob = new Blob([swScript], { type: 'application/javascript' });
+        navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+      });
+    }
+
+    initCanvas();
+    renderInkDiffusion();
+
+    checkNewDayRollover();
+    render();
+  </script>
+</body>
+</html>
